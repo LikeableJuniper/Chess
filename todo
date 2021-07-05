@@ -1,0 +1,2 @@
+Add movement calculation for pieces, line 67
+Add function checkForCheck() to check if a list of movements contains any illegal moves, line 12
