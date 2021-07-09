@@ -1,6 +1,9 @@
 import tkinter as tk
 from functools import partial
 
+#!TestCommand!
+
+
 root = tk.Tk()
 root.attributes("-fullscreen", True)
 root.title("Chess")
