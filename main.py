@@ -13,10 +13,20 @@ selected = None
 points = int()
 pointsLabel : tk.Label = None
 
+promoter : tk.Toplevel = None
+
+
+#? is tk.Button command, so has to be func, even if so short
+def promote(piece : str = "queen", n : int = 0, playerCol : str = "black"):
+    global promoter, buttons
+    buttons[n]["piece"] = piece + "_" + playerCol
+    render()
+    promoter.destroy()
+    promoter = None
+
 
 def render():
     global buttons
-    images = []
     for i in range(len(buttons)):
         try:
             photo = tk.PhotoImage(file=getpng(buttons[i]["piece"].split("_")[0], buttons[i]["piece"].split("_")[1]))
@@ -26,8 +36,18 @@ def render():
         buttons[i]["Button"].image = photo
 
 
-def isCheck(field : list):
+def isCheck(field : list, playerCol):
     check = False
+    if playerCol == "black":
+        oppCol = "white"
+    else:
+        oppCol = "black"
+    for piece in range(len(field)):
+        if field[piece] == f"king_{playerCol}":
+            for testPos in range(len(field)):
+                if piece in getMovement(field[testPos], testPos, True, playerCol, useCustomField=True, customField=field):
+                    check = True
+
     return check
 
 
@@ -42,16 +62,21 @@ def checkForCheck(n : int, movement : list[int], playerCol : str = "black"):
         pieceInfo = sim[n]
         sim[n] = "none_none"
         sim[pos] = pieceInfo
-        if isCheck(sim):
+        if isCheck(sim, playerCol):
             print(f"Popped {pos}")
             movement.pop(pos)
+
+        
 
 
     return movement
 
 
-def getMovement(piece : str="pawn", n : int=None, oppMove : bool=False, playerCol : str = "black"):
-    global buttons
+def getMovement(piece : str="pawn", n : int=None, oppMove : bool=False, playerCol : str = "black", useCustomField : bool = False, customField : list = None):
+    if useCustomField:
+        buttons = customField
+    else:
+        global buttons
     if playerCol == "black":
         oppCol = "white"
     else:
@@ -102,8 +127,6 @@ def getMovement(piece : str="pawn", n : int=None, oppMove : bool=False, playerCo
                 surrounding.append(n+9)
             if not n in leftEdges:
                 surrounding.append(n+7)
-        
-        print(surrounding)
 
         if oppMove:
             for pos in surrounding:
@@ -416,11 +439,19 @@ def getpng(file, col):
 
 
 def buttonClick(n, playerCol):
-    global buttons, selected, points, pointsLabel
+    global buttons, selected, points, pointsLabel, root, promoter
+
+    if promoter is not None:
+        return
+
+    if playerCol == "black":
+        col = "grey"
+    else:
+        col = "light grey"
 
     for i in range(len(buttons)):
         buttons[i]["Button"]["bg"] = buttons[i]["color"]
-    
+
     if not selected is None:
         mov = checkForCheck(selected, getMovement(piece=buttons[selected]["piece"].split("_")[0], n=selected, oppMove=False, playerCol=playerCol))
         if n in mov:
@@ -429,6 +460,35 @@ def buttonClick(n, playerCol):
                 pass
             buttons[n]["piece"] = buttons[selected]["piece"]
             buttons[selected]["piece"] = "none_none"
+            if n in [i for i in range(8)] and buttons[n]["piece"].split("_")[0] == "pawn":
+                promoter = tk.Toplevel(master=root)
+                promoter.iconbitmap("Images/icon.ico")
+                promoter.geometry("350x150")
+                tk.Label(master=promoter, text="Choose piece to promote to.").place(x=10, y=10, height=10, width=300)
+                photoQueen = tk.PhotoImage(file=getpng("queen", playerCol))
+                queenButton = tk.Button(master=promoter, bg=col, command=partial(promote, "queen", n, playerCol))
+                queenButton.place(x=30, y=30, height=50, width=50)
+                queenButton.config(image=photoQueen)
+                queenButton.image = photoQueen
+
+                photoKnight = tk.PhotoImage(file=getpng("knight", playerCol))
+                knightButton = tk.Button(master=promoter, bg=col, command=partial(promote, "knight", n, playerCol))
+                knightButton.place(x=110, y=30, height=50, width=50)
+                knightButton.config(image=photoKnight)
+                knightButton.image = photoKnight
+
+                photoRook = tk.PhotoImage(file=getpng("rook", playerCol))
+                rookButton = tk.Button(master=promoter, bg=col, command=partial(promote, "rook", n, playerCol))
+                rookButton.place(x=190, y=30, height=50, width=50)
+                rookButton.config(image=photoRook)
+                rookButton.image = photoRook
+
+                photoBishop = tk.PhotoImage(file=getpng("bishop", playerCol))
+                bishopButton = tk.Button(master=promoter, bg=col, command=partial(promote, "bishop", n, playerCol))
+                bishopButton.place(x=270, y=30, height=50, width=50)
+                bishopButton.config(image=photoBishop)
+                bishopButton.image = photoBishop
+                
             render()
             return
     if buttons[n]["piece"].split("_")[1] != playerCol:
@@ -436,7 +496,7 @@ def buttonClick(n, playerCol):
         return
     else:
         selected = n
-    
+
     info = buttons[n]
     try:
         movement = checkForCheck(selected, getMovement(piece=info["piece"].split("_")[0], n=selected, oppMove=False, playerCol=playerCol))
