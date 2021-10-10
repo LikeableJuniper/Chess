@@ -1,8 +1,7 @@
 import tkinter as tk
 from functools import partial
 
-#!TestCommand!
-
+open("log.log", "w").close()
 
 root = tk.Tk()
 root.attributes("-fullscreen", True)
@@ -40,6 +39,12 @@ def render():
 
 
 def isCheck(field : list, playerCol):
+
+    compField : list[dict] = list()
+
+    for elem in field:
+        compField.append({"piece": elem})
+
     check = False
     if playerCol == "black":
         oppCol = "white"
@@ -48,7 +53,9 @@ def isCheck(field : list, playerCol):
     for piece in range(len(field)):
         if field[piece] == f"king_{playerCol}":
             for testPos in range(len(field)):
-                if piece in getMovement(field[testPos], testPos, True, playerCol, useCustomField=True, customField=field):
+                if field[testPos].split("_")[1] == playerCol:
+                    continue # continue if piece is under players control
+                if piece in getMovement(field[testPos].split("_")[0], testPos, True, playerCol, compField):
                     check = True
 
     return check
@@ -66,8 +73,7 @@ def checkForCheck(n : int, movement : list[int], playerCol : str = "black"):
         sim[n] = "none_none"
         sim[pos] = pieceInfo
         if isCheck(sim, playerCol):
-            print(f"Popped {pos}")
-            movement.pop(pos)
+            movement.remove(pos)
 
         
 
@@ -75,11 +81,7 @@ def checkForCheck(n : int, movement : list[int], playerCol : str = "black"):
     return movement
 
 
-def getMovement(piece : str="pawn", n : int=None, oppMove : bool=False, playerCol : str = "black", useCustomField : bool = False, customField : list = None):
-    if useCustomField:
-        buttons = customField
-    else:
-        global buttons
+def getMovement(piece : str="pawn", n : int=None, oppMove : bool=False, playerCol : str = "black", buttons : list = None):
     if playerCol == "black":
         oppCol = "white"
     else:
@@ -91,348 +93,348 @@ def getMovement(piece : str="pawn", n : int=None, oppMove : bool=False, playerCo
     upperPawnLine = range(8, 16)
     lowerPawnLine = range(48, 56)
     movement : list[int] = list()
+    if True:
+        if piece == "pawn":
+            if oppMove:
+                if buttons[n+8]["piece"] == "none_none" and not n in lowerEdges:
+                    movement.append(n+8)
+                    if n in upperPawnLine and buttons[n+16]["piece"].split("_")[1] != oppCol:
+                        movement.append(n+16)
+                if buttons[n+7]["piece"] != "none_none" and buttons[n+7]["piece"].split("_")[1] != oppCol and not n in leftEdges:
+                    movement.append(n+7)
+                if buttons[n+9]["piece"] != "none_none" and buttons[n+9]["piece"].split("_")[1] != oppCol and not n in rightEdges:
+                    movement.append(n+9)
+            else:
+                if buttons[n-8]["piece"] == "none_none" and not n in topEdges:
+                    movement.append(n-8)
+                    if n in lowerPawnLine and buttons[n-16]["piece"].split("_")[1] != playerCol:
+                        movement.append(n-16)
+                if buttons[n-7]["piece"] != "none_none" and buttons[n-7]["piece"].split("_")[1] != playerCol and not n in rightEdges:
+                    movement.append(n-7)
+                if buttons[n-9]["piece"] != "none_none" and buttons[n-9]["piece"].split("_")[1] != playerCol and not n in leftEdges:
+                    movement.append(n-9)
 
-    if piece == "pawn":
-        if oppMove:
-            if buttons[n+8]["piece"] == "none_none" and not n in lowerEdges:
-                movement.append(n+8)
-                if n in upperPawnLine and buttons[n+16]["piece"].split("_")[1] != oppCol:
-                    movement.append(n+16)
-            if buttons[n+7]["piece"] != "none_none" and buttons[n+7]["piece"].split("_")[1] != oppCol and not n in leftEdges:
-                movement.append(n+7)
-            if buttons[n+9]["piece"] != "none_none" and buttons[n+9]["piece"].split("_")[1] != oppCol and not n in rightEdges:
-                movement.append(n+9)
-        else:
-            if buttons[n-8]["piece"] == "none_none" and not n in topEdges:
-                movement.append(n-8)
-                if n in lowerPawnLine and buttons[n-16]["piece"].split("_")[1] != playerCol:
-                    movement.append(n-16)
-            if buttons[n-7]["piece"] != "none_none" and buttons[n-7]["piece"].split("_")[1] != playerCol and not n in rightEdges:
-                movement.append(n-7)
-            if buttons[n-9]["piece"] != "none_none" and buttons[n-9]["piece"].split("_")[1] != playerCol and not n in leftEdges:
-                movement.append(n-9)
-
-    if piece == "king":
-        surrounding : list[int] = list()
-        if not n in topEdges:
-            surrounding.append(n-8)
+        if piece == "king":
+            surrounding : list[int] = list()
+            if not n in topEdges:
+                surrounding.append(n-8)
+                if not n in rightEdges:
+                    surrounding.append(n-7)
+                if not n in leftEdges:
+                    surrounding.append(n-9)
             if not n in rightEdges:
-                surrounding.append(n-7)
+                surrounding.append(n+1)
             if not n in leftEdges:
-                surrounding.append(n-9)
-        if not n in rightEdges:
-            surrounding.append(n+1)
-        if not n in leftEdges:
-            surrounding.append(n-1)
-        if not n in lowerEdges:
-            surrounding.append(n+8)
-            if not n in rightEdges:
-                surrounding.append(n+9)
-            if not n in leftEdges:
-                surrounding.append(n+7)
+                surrounding.append(n-1)
+            if not n in lowerEdges:
+                surrounding.append(n+8)
+                if not n in rightEdges:
+                    surrounding.append(n+9)
+                if not n in leftEdges:
+                    surrounding.append(n+7)
 
-        if oppMove:
-            for pos in surrounding:
-                if buttons[pos]["piece"].split("_")[1] != oppCol:
-                    movement.append(pos)
-        else:
-            for pos in surrounding:
-                if buttons[pos]["piece"].split("_")[1] != playerCol:
-                    movement.append(pos)
-    
-    if piece == "knight":
-        secondRightLine = [x-1 for x in rightEdges]
-        secondLeftLine = [x+1 for x in leftEdges]
-        secondTopLine = [x+8 for x in topEdges]
-        secondLowerLine = [x-8 for x in lowerEdges]
-        if not n in secondRightLine and not n in rightEdges and not n in topEdges and buttons[n-6]["piece"].split("_")[1] != playerCol:
-            movement.append(n-6)
-        if not n in secondTopLine and not n in topEdges and not n in rightEdges and buttons[n-15]["piece"].split("_")[1] != playerCol:
-            movement.append(n-15)
-        if not n in secondTopLine and not n in topEdges and not n in leftEdges and buttons[n-17]["piece"].split("_")[1] != playerCol:
-            movement.append(n-17)
-        if not n in secondLeftLine and not n in leftEdges and not n in topEdges and buttons[n-10]["piece"].split("_")[1] != playerCol:
-            movement.append(n-10)
-        if not n in secondLeftLine and not n in leftEdges and not n in lowerEdges and buttons[n+6]["piece"].split("_")[1] != playerCol:
-            movement.append(n+6)
-        if not n in secondLowerLine and not n in lowerEdges and not n in leftEdges and buttons[n+15]["piece"].split("_")[1] != playerCol:
-            movement.append(n+15)
-        if not n in secondLowerLine and not n in lowerEdges and not n in rightEdges and buttons[n+17]["piece"].split("_")[1] != playerCol:
-            movement.append(n+17)
-        if not n in secondRightLine and not n in rightEdges and not n in lowerEdges and buttons[n+10]["piece"].split("_")[1] != playerCol:
-            movement.append(n+10)
-    
-    if piece == "rook":
-        if not oppMove:
-            testInd = int()
-            for i in range(1, 9):
-                if n in rightEdges:
-                    break
-                testInd = n+i
-                if testInd in rightEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(n+i)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-            for i in [x*8 for x in range(1, 9)]:
-                if n in topEdges:
-                    break
-                testInd = n-i
-                if testInd in topEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-            for i in range(1, 9):
-                if n in leftEdges:
-                    break
-                testInd = n-i
-                if testInd in leftEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-            for i in [x*8 for x in range(1, 9)]:
-                if n in lowerEdges:
-                    break
-                testInd = n+i
-                if testInd in lowerEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-        else:
-            testInd = int()
-            for i in range(1, 9):
-                if n in rightEdges:
-                    break
-                testInd = n+i
-                if testInd in rightEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(n+i)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-            for i in [x*8 for x in range(1, 9)]:
-                if n in topEdges:
-                    break
-                testInd = n-i
-                if testInd in topEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-            for i in range(1, 9):
-                if n in leftEdges:
-                    break
-                testInd = n-i
-                if testInd in leftEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
-            for i in [x*8 for x in range(1, 9)]:
-                if n in lowerEdges:
-                    break
-                testInd = n+i
-                if testInd in lowerEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                    continue
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+            if oppMove:
+                for pos in surrounding:
+                    if buttons[pos]["piece"].split("_")[1] != oppCol:
+                        movement.append(pos)
+            else:
+                for pos in surrounding:
+                    if buttons[pos]["piece"].split("_")[1] != playerCol:
+                        movement.append(pos)
+        
+        if piece == "knight":
+            secondRightLine = [x-1 for x in rightEdges]
+            secondLeftLine = [x+1 for x in leftEdges]
+            secondTopLine = [x+8 for x in topEdges]
+            secondLowerLine = [x-8 for x in lowerEdges]
+            if not n in secondRightLine and not n in rightEdges and not n in topEdges and buttons[n-6]["piece"].split("_")[1] != playerCol:
+                movement.append(n-6)
+            if not n in secondTopLine and not n in topEdges and not n in rightEdges and buttons[n-15]["piece"].split("_")[1] != playerCol:
+                movement.append(n-15)
+            if not n in secondTopLine and not n in topEdges and not n in leftEdges and buttons[n-17]["piece"].split("_")[1] != playerCol:
+                movement.append(n-17)
+            if not n in secondLeftLine and not n in leftEdges and not n in topEdges and buttons[n-10]["piece"].split("_")[1] != playerCol:
+                movement.append(n-10)
+            if not n in secondLeftLine and not n in leftEdges and not n in lowerEdges and buttons[n+6]["piece"].split("_")[1] != playerCol:
+                movement.append(n+6)
+            if not n in secondLowerLine and not n in lowerEdges and not n in leftEdges and buttons[n+15]["piece"].split("_")[1] != playerCol:
+                movement.append(n+15)
+            if not n in secondLowerLine and not n in lowerEdges and not n in rightEdges and buttons[n+17]["piece"].split("_")[1] != playerCol:
+                movement.append(n+17)
+            if not n in secondRightLine and not n in rightEdges and not n in lowerEdges and buttons[n+10]["piece"].split("_")[1] != playerCol:
+                movement.append(n+10) 
+        
+        if piece == "rook":
+            if not oppMove:
+                testInd = int()
+                for i in range(1, 9):
+                    if n in rightEdges:
+                        break
+                    testInd = n+i
+                    if testInd in rightEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(n+i)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in topEdges:
+                        break
+                    testInd = n-i
+                    if testInd in topEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+                for i in range(1, 9):
+                    if n in leftEdges:
+                        break
+                    testInd = n-i
+                    if testInd in leftEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in lowerEdges:
+                        break
+                    testInd = n+i
+                    if testInd in lowerEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+            else:
+                testInd = int()
+                for i in range(1, 9):
+                    if n in rightEdges:
+                        break
+                    testInd = n+i
+                    if testInd in rightEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(n+i)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in topEdges:
+                        break
+                    testInd = n-i
+                    if testInd in topEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+                for i in range(1, 9):
+                    if n in leftEdges:
+                        break
+                    testInd = n-i
+                    if testInd in leftEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in lowerEdges:
+                        break
+                    testInd = n+i
+                    if testInd in lowerEdges and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                        continue
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break    
+        
+        if piece == "bishop":
+            if not oppMove:
+                testInd = int()
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in topEdges or n in rightEdges:
+                        break
+                    testInd = n-i+y
+                    if (testInd in topEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-    if piece == "bishop":
-        if not oppMove:
-            testInd = int()
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in topEdges or n in rightEdges:
-                    break
-                testInd = n-i+y
-                if (testInd in topEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in topEdges or n in leftEdges:
+                        break
+                    testInd = n-i-y
+                    if (testInd in topEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-                y += 1
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in topEdges or n in leftEdges:
-                    break
-                testInd = n-i-y
-                if (testInd in topEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in lowerEdges or n in leftEdges:
+                        break
+                    testInd = n+i-y
+                    if (testInd in lowerEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-                y += 1
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in lowerEdges or n in leftEdges:
-                    break
-                testInd = n+i-y
-                if (testInd in lowerEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in lowerEdges or n in rightEdges:
+                        break
+                    testInd = n+i+y
+                    if (testInd in lowerEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != playerCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-                y += 1
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in lowerEdges or n in rightEdges:
-                    break
-                testInd = n+i+y
-                if (testInd in lowerEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != playerCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
+            else:
+                testInd = int()
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in topEdges or n in rightEdges:
+                        break
+                    testInd = n-i+y
+                    if (testInd in topEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-                y += 1
-        else:
-            testInd = int()
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in topEdges or n in rightEdges:
-                    break
-                testInd = n-i+y
-                if (testInd in topEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
 
-                y += 1
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in topEdges or n in leftEdges:
+                        break
+                    testInd = n-i-y
+                    if (testInd in topEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in topEdges or n in leftEdges:
-                    break
-                testInd = n-i-y
-                if (testInd in topEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in lowerEdges or n in leftEdges:
+                        break
+                    testInd = n+i-y
+                    if (testInd in lowerEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-                y += 1
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in lowerEdges or n in leftEdges:
-                    break
-                testInd = n+i-y
-                if (testInd in lowerEdges or testInd in leftEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
+                y = 1
+                for i in [x*8 for x in range(1, 9)]:
+                    if n in lowerEdges or n in rightEdges:
+                        break
+                    testInd = n+i+y
+                    if (testInd in lowerEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    if buttons[testInd]["piece"] == "none_none":
+                        movement.append(testInd)
+                    elif buttons[testInd]["piece"].split("_")[1] != oppCol:
+                        movement.append(testInd)
+                        break
+                    else:
+                        break
 
-                y += 1
-            y = 1
-            for i in [x*8 for x in range(1, 9)]:
-                if n in lowerEdges or n in rightEdges:
-                    break
-                testInd = n+i+y
-                if (testInd in lowerEdges or testInd in rightEdges) and buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                if buttons[testInd]["piece"] == "none_none":
-                    movement.append(testInd)
-                elif buttons[testInd]["piece"].split("_")[1] != oppCol:
-                    movement.append(testInd)
-                    break
-                else:
-                    break
+                    y += 1
 
-                y += 1
-
-    if piece == "queen":
-        movement = getMovement("rook", n, oppMove, playerCol) + getMovement("bishop", n, oppMove, playerCol)
+        if piece == "queen":
+            movement = getMovement("rook", n, oppMove, playerCol, buttons) + getMovement("bishop", n, oppMove, playerCol, buttons)
 
     return movement
 
@@ -456,7 +458,7 @@ def buttonClick(n, playerCol):
         buttons[i]["Button"]["bg"] = buttons[i]["color"]
 
     if not selected is None:
-        mov = checkForCheck(selected, getMovement(piece=buttons[selected]["piece"].split("_")[0], n=selected, oppMove=False, playerCol=playerCol))
+        mov = checkForCheck(selected, getMovement(piece=buttons[selected]["piece"].split("_")[0], n=selected, oppMove=False, playerCol=playerCol, buttons=buttons))
         if n in mov:
             if buttons[n]["piece"] != "none_none":
                 #TODO: points
@@ -502,7 +504,7 @@ def buttonClick(n, playerCol):
 
     info = buttons[n]
     try:
-        movement = checkForCheck(selected, getMovement(piece=info["piece"].split("_")[0], n=selected, oppMove=False, playerCol=playerCol))
+        movement = checkForCheck(selected, getMovement(piece=info["piece"].split("_")[0], n=selected, oppMove=False, playerCol=playerCol, buttons=buttons))
         for pos in movement:
             if buttons[pos]["piece"] != "none_none":
                 buttons[pos]["Button"]["bg"] = "red"
@@ -544,15 +546,15 @@ def init(col):
         images.append("")
         pieces.append("none_none")
     
-    images.append(getpng("pawn", oppCol))
-    pieces.append(f"pawn_{oppCol}")
+    images.append(getpng("king", playerCol))
+    pieces.append(f"king_{playerCol}")
     
     for _ in range(8):
         images.append(getpng("pawn", playerCol))
         pieces.append(f"pawn_{playerCol}")
 
-    images += [getpng("rook", playerCol), getpng("knight", playerCol), getpng("bishop", playerCol), getpng("queen", playerCol), getpng("king", playerCol), getpng("bishop", playerCol), getpng("knight", playerCol), getpng("rook", playerCol)]
-    pieces += [f"rook_{playerCol}", f"knight_{playerCol}", f"bishop_{playerCol}", f"queen_{playerCol}", f"king_{playerCol}", f"bishop_{playerCol}", f"knight_{playerCol}", f"rook_{playerCol}"]
+    images += [getpng("rook", playerCol), getpng("knight", playerCol), getpng("bishop", playerCol), getpng("queen", playerCol), "", getpng("bishop", playerCol), getpng("knight", playerCol), getpng("rook", playerCol)]
+    pieces += [f"rook_{playerCol}", f"knight_{playerCol}", f"bishop_{playerCol}", f"queen_{playerCol}", f"none_none", f"bishop_{playerCol}", f"knight_{playerCol}", f"rook_{playerCol}"]
 
 
     for i in range(64):
